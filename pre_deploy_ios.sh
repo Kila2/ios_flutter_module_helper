@@ -69,5 +69,4 @@ fi
 sed -i .bak "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
 sed -i .bak "s/\${POD_NAME}/${PODNAME}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
 sed -i .bak "s/\${USER_NAME}/`git config user.name`/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-sed -i .bak "s/spec_path: .\/ios_deploy\/.*/spec_path: .\/ios_deploy\/${PODNAME}.podspec/" ${SRCROOT}/module_ci.ios.yml
 
