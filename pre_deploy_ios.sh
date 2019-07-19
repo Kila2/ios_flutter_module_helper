@@ -1,8 +1,8 @@
 #!/bin/sh
 SRCROOT=`pwd`
-PODNAME=`cat $SRCROOT/.FlutterModuleNameiOS`
-if [ -d ".ios" ] || [ -d ".android" ]
-then 
+PODNAME=`cat $SRCROOT/.APFShotiOS`
+if [ -d "ios" ] || [ -d "android" ]
+then
   echo 'its a flutter project'
 else
   echo "Not in flutter project"
@@ -20,13 +20,17 @@ then
 else
  echo 'output dir is clean'  
 fi && \
-xcodebuild clean build -workspace $SRCROOT/${PODNAME}/Example/${PODNAME}.xcworkspace -scheme ${PODNAME}-Example -configuration Debug -sdk #iphonesimulator -arch x86_64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- #EXPANDED_CODE_SIGN_IDENTITY_NAME=- CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphonesimulator && \
-xcodebuild clean build -workspace $SRCROOT/${PODNAME}/Example/${PODNAME}.xcworkspace -scheme ${PODNAME}-Example -configuration Release -sdk #iphoneos -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- #EXPANDED_CODE_SIGN_IDENTITY_NAME=- FLUTTER_BUILD_MODE=release CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphoneos
+flutter packages get
+cd ios
+pod install
+cd $SRCROOT
+xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Debug -sdk iphonesimulator -arch x86_64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphonesimulator && \
+xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- FLUTTER_BUILD_MODE=release CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphoneos
 cd $SRCROOT/.ios/Flutter/engine && \
 zip -r $SRCROOT/Flutter.zip Flutter.framework && \
 cd $SRCROOT/build && \
-cp -r $SRCROOT/build/miniapp/iphonesimulator/${PODNAME}_Example.app/Frameworks/App.framework $SRCROOT/build/
-cp -r $SRCROOT/build/miniapp/iphoneos/${PODNAME}_Example.app/Frameworks/App.framework $SRCROOT/build/App-device.framework
+cp -r $SRCROOT/build/miniapp/iphonesimulator/Runner.app/Frameworks/App.framework $SRCROOT/build/
+cp -r $SRCROOT/build/miniapp/iphoneos/Runner.app/Frameworks/App.framework $SRCROOT/build/App-device.framework
 lipo -create $SRCROOT/build/App.framework/App $SRCROOT/build/App-device.framework/App -output $SRCROOT/build/App.framework/App
 zip -rm $SRCROOT/Flutter.zip App.framework && \
 rm -rf $SRCROOT/build/App.framework
@@ -35,8 +39,8 @@ rm -rf $SRCROOT/build/App-sim.framework
 ALLFRAMEWOEK=\'App.framework\',\'Flutter.framework\'
 cd $SRCROOT/build
 for file in $SRCROOT/build/miniapp/iphoneos/*.framework
-do 
-  if [[ $file = *Pods_${PODNAME}_Example.framework ]]; then
+do
+  if [[ $file = *Pods_Runner.framework ]]; then
     continue
   fi
   nameext=${file##*/}
@@ -51,18 +55,19 @@ do
   rm -rf $SRCROOT/build/${name}-sim.framework
 done
 cd $SRCROOT/ios_deploy
-# git pull && \
-mv $SRCROOT/Flutter.zip $SRCROOT/ios_deploy && \
-# git add Flutter.zip && \
-cd $SRCROOT
+mv $SRCROOT/Flutter.zip $SRCROOT/ios_deploy
 if [ -f "${SRCROOT}/ios_deploy/${PODNAME}.podspec" ] 
 then
  echo "nothing" >> /dev/null
 else
- cp ${SRCROOT}/${PODNAME}/${PODNAME}FlutterModule.podspec ${SRCROOT}/ios_deploy/${PODNAME}.podspec
+ cp ${SRCROOT}/Template.podspec ${SRCROOT}/ios_deploy/${PODNAME}.podspec
 fi
 #for linux
 #sed -i "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
 #for mac
 #sed -i n.tmp "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-sed -i n.tmp "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
+sed -i .bak "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
+sed -i .bak "s/\${POD_NAME}/${PODNAME}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
+sed -i .bak "s/\${USER_NAME}/`git config user.name`/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
+sed -i .bak "s/spec_path: .\/ios_deploy\/.*/spec_path: .\/ios_deploy\/${PODNAME}.podspec/" ${SRCROOT}/module_ci.ios.yml
+
