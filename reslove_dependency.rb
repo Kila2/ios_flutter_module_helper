@@ -4,7 +4,7 @@ require 'fileutils'
 require 'json'
 
 srcroot = ARGV.first
-PODNAME = "TestPodName"
+PODNAME = "TestModuleName"
 PodTemplate = "#{srcroot}/Template.podspec"
 PodSpec = "#{srcroot}/ios_deploy/#{PODNAME}.podspec"
 USER_NAME = `git config user.name`.strip!
@@ -31,7 +31,21 @@ def main
         system(cmd)
     end
 
-    #制作Framework #BUG没有考虑Bundle
+
+    #到Pods/Local Podspecs中找到对应bundle所属的json
+    localSpecs = Dir["#{srcroot}/ios/Pods/Local Podspecs/*.json"]
+    resHash = {}
+    localSpecs.each do |sepc|
+        json = File.read(sepc)
+        obj = JSON.parse(json)
+        if obj["resource_bundles"] != nil
+            obj["resource_bundles"].each do |bundlename,versionArr|
+                resHash[bundlename] = obj["name"]
+            end
+        end
+    end
+
+    #制作Framework
     def mkFramework(dir,liba)
         srcroot = ARGV.first
         Dir::chdir(dir)
@@ -42,6 +56,15 @@ def main
         cmd = "cp -r #{srcroot}/ios/Pods/Headers/Public/#{liba} ./#{liba}.framework/Headers"
         puts cmd
         system(cmd)
+        #copyBundle
+        bundles = Dir["#{srcroot}/build/miniapp/iphoneos/*.bundle"]
+        bundles.each do |bundle|
+            #到Pods/Local Podspecs中找到对应bundle所属的json
+            nameext = File.basename(bundle)
+            #copy bundle到framework
+            FileUtils.copy_entry(bundle,"#{srcroot}/build/#{liba}.framework/#{nameext}")
+            puts "🚽#{bundle} ,#{srcroot}/build/#{nameext}"
+        end
         Dir::chdir(srcroot)
         return "#{liba}.framework"
     end
