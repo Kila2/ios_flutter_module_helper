@@ -1,6 +1,7 @@
 #!/bin/sh
+export PUB_HOSTED_URL=https://pub.flutter-io.cn
+export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 SRCROOT=`pwd`
-PODNAME=`cat $SRCROOT/.APFShotiOS`
 if [ -d "ios" ] || [ -d "android" ]
 then
   echo 'its a flutter project'
@@ -20,53 +21,26 @@ then
 else
  echo 'output dir is clean'  
 fi && \
+if [ -f "$SRCROOT/ios/Podfile.lock" ]
+then
+  rm $SRCROOT/ios/Podfile.lock
+else
+  echo 'no podfile.lock'  
+fi 
+if [ -d "$SRCROOT/.ios" ]
+then
+  rm -rf $SRCROOT/.ios
+else
+  echo 'no .ios'  
+fi 
 flutter packages get
 cd ios
 pod install
 cd $SRCROOT
+#BUG XCode11无法打armv7
 xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Debug -sdk iphonesimulator -arch x86_64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphonesimulator && \
-xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos -arch arm64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- FLUTTER_BUILD_MODE=release CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphoneos
-cd $SRCROOT/.ios/Flutter/engine && \
-zip -r $SRCROOT/Flutter.zip Flutter.framework && \
-cd $SRCROOT/build && \
-cp -r $SRCROOT/build/miniapp/iphonesimulator/Runner.app/Frameworks/App.framework $SRCROOT/build/
-cp -r $SRCROOT/build/miniapp/iphoneos/Runner.app/Frameworks/App.framework $SRCROOT/build/App-device.framework
-lipo -create $SRCROOT/build/App.framework/App $SRCROOT/build/App-device.framework/App -output $SRCROOT/build/App.framework/App
-zip -rm $SRCROOT/Flutter.zip App.framework && \
-rm -rf $SRCROOT/build/App.framework
-rm -rf $SRCROOT/build/App-sim.framework
-#添加三方库和插件
-ALLFRAMEWOEK=\'App.framework\',\'Flutter.framework\'
-cd $SRCROOT/build
-for file in $SRCROOT/build/miniapp/iphoneos/*.framework
-do
-  if [[ $file = *Pods_Runner.framework ]]; then
-    continue
-  fi
-  nameext=${file##*/}
-  ALLFRAMEWOEK=${ALLFRAMEWOEK},\'${nameext}\'
-  echo ${ALLFRAMEWOEK}
-  name=${nameext%.*}
-  cp -r $SRCROOT/build/miniapp/iphoneos/${name}.framework $SRCROOT/build/
-  cp -r $SRCROOT/build/miniapp/iphonesimulator/${name}.framework $SRCROOT/build/${name}-sim.framework
-  lipo -create $SRCROOT/build/${name}.framework/${name} $SRCROOT/build/${name}-sim.framework/${name} -output $SRCROOT/build/${name}.framework/${name}
-  zip -rm $SRCROOT/Flutter.zip ${name}.framework && \
-  rm -rf $SRCROOT/build/${name}.framework
-  rm -rf $SRCROOT/build/${name}-sim.framework
-done
-cd $SRCROOT/ios_deploy
-mv $SRCROOT/Flutter.zip $SRCROOT/ios_deploy
-if [ -f "${SRCROOT}/ios_deploy/${PODNAME}.podspec" ] 
-then
- echo "nothing" >> /dev/null
-else
- cp ${SRCROOT}/Template.podspec ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-fi
-#for linux
-#sed -i "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-#for mac
-#sed -i n.tmp "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-sed -i .bak "s/s.vendored_frameworks.*/s.vendored_frameworks = ${ALLFRAMEWOEK}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-sed -i .bak "s/\${POD_NAME}/${PODNAME}/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-sed -i .bak "s/\${USER_NAME}/`git config user.name`/" ${SRCROOT}/ios_deploy/${PODNAME}.podspec
-
+xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos -arch arm64 -arch armv7 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- FLUTTER_BUILD_MODE=release CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphoneos
+echo 'run reslove_dependency.rb'
+ruby $SRCROOT/reslove_dependency.rb $SRCROOT
+echo 'run reslove_dependency.rb finish'
+exit 0
