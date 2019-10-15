@@ -73,7 +73,7 @@ def main
     podlock = YAML.load(File.open("#{srcroot}/ios/Podfile.lock"))
     dependencys = []
     repos = podlock["SPEC REPOS"]
-    repos.each do |key,value|
+    repos&.each do |key,value|
         repos[key].each do |dependency|
             dependencys.push(dependency) 
         end
