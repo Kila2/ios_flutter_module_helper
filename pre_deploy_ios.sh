@@ -11,7 +11,8 @@ else
 fi
 if [ -d "ios_deploy" ]
 then
-  echo 'ios_deploy ready'
+  rm -rf ios_deploy
+  mkdir ios_deploy
 else
   mkdir ios_deploy
 fi && \
@@ -34,12 +35,6 @@ else
   echo 'no .ios'  
 fi 
 flutter packages get
-cd ios
-pod install
-cd $SRCROOT
-#BUG XCode11无法打armv7
-xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Debug -sdk iphonesimulator -arch x86_64 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphonesimulator && \
-xcodebuild clean build -workspace $SRCROOT/ios/Runner.xcworkspace -scheme Runner -configuration Release -sdk iphoneos -arch arm64 -arch armv7 CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO EXPANDED_CODE_SIGN_IDENTITY=- EXPANDED_CODE_SIGN_IDENTITY_NAME=- FLUTTER_BUILD_MODE=release CONFIGURATION_BUILD_DIR=$SRCROOT/build/miniapp/iphoneos
 echo 'run reslove_dependency.rb'
 ruby $SRCROOT/reslove_dependency.rb $SRCROOT
 echo 'run reslove_dependency.rb finish'
